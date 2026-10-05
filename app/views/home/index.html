@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}
+
+    MS GYM - Início
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="home">
+
+    <!-- MENU -->
+
+    <header class="navbar">
+
+        <div class="logo">
+            MS<span>GYM</span>
+        </div>
+
+        <nav>
+
+            <a href="#">Início</a>
+
+            <a href="#">Meu treino</a>
+
+            <a href="#">Meu perfil</a>
+
+            <form
+                method="POST"
+                action="{{ url_for('auth.logout') }}"
+            >
+
+                <button
+                    type="submit"
+                    class="btn-sair"
+                >
+                    Sair
+                </button>
+
+            </form>
+
+        </nav>
+
+    </header>
+
+
+    <!-- CONTEÚDO -->
+
+    <main class="home-content">
+
+        <section class="boas-vindas">
+
+            <p class="pequeno">
+                MS GYM
+            </p>
+
+            <h1>
+                Olá, <strong>{{ usuario }}</strong>.
+            </h1>
+
+            <p>
+                Bem-vindo de volta.
+                Pronto para o seu próximo treino?
+            </p>
+
+        </section>
+
+
+        <!-- CARDS -->
+
+        <section class="cards-home">
+
+            <div class="home-card">
+
+                <div class="icone">
+                    🏋️
+                </div>
+
+                <h2>
+                    Meu treino
+                </h2>
+
+                <p>
+                    Acesse seu treino e acompanhe
+                    seus exercícios.
+                </p>
+
+                <a href="#">
+                    Ver treino →
+                </a>
+
+            </div>
+
+
+            <div class="home-card">
+
+                <div class="icone">
+                    👤
+                </div>
+
+                <h2>
+                    Meu perfil
+                </h2>
+
+                <p>
+                    Consulte suas informações
+                    dentro da academia.
+                </p>
+
+                <a href="#">
+                    Ver perfil →
+                </a>
+
+            </div>
+
+
+            <div class="home-card">
+
+                <div class="icone">
+                    🏢
+                </div>
+
+                <h2>
+                    Academia
+                </h2>
+
+                <p>
+                    Veja informações e novidades
+                    da MS GYM.
+                </p>
+
+                <a href="#">
+                    Ver informações →
+                </a>
+
+            </div>
+
+        </section>
+
+
+        <!-- PERFIL -->
+
+        <section class="perfil">
+
+            <div>
+
+                <span>
+                    Seu perfil
+                </span>
+
+                <h2>
+                    {{ tipo|capitalize }}
+                </h2>
+
+            </div>
+
+            <div class="status">
+
+                <span class="bolinha"></span>
+
+                Conta ativa
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+{% endblock %}

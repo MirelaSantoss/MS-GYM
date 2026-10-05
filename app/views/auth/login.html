@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+
+    MS GYM - Login
+
+{% endblock %}
+
+
+{% block content %}
+
+<div class="container">
+
+    <div class="card">
+
+        <!-- LADO DA MARCA -->
+
+        <div class="brand">
+
+            <div>
+
+                <div class="brand-logo">
+
+                    MS
+
+                    <span>
+                        GYM
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="brand-text">
+
+                <h2>
+                    FORÇA.<br>
+                    FOCO.<br>
+                    CONSTÂNCIA.
+                </h2>
+
+                <p>
+                    Seu treino. Seu ritmo.
+                    Sua evolução.
+                </p>
+
+            </div>
+
+
+            <div class="brand-footer">
+
+                MS GYM
+
+            </div>
+
+        </div>
+
+
+        <!-- LADO DO LOGIN -->
+
+        <div class="login-area">
+
+            <h1>
+                Bem-vindo
+            </h1>
+
+            <p class="subtitle">
+                Entre para acessar seu espaço.
+            </p>
+
+
+            {% if erro %}
+
+                <div class="erro">
+
+                    {{ erro }}
+
+                </div>
+
+            {% endif %}
+
+
+            <form
+                method="POST"
+                action="{{ url_for('auth.login') }}"
+            >
+
+                <div class="campo">
+
+                    <label for="usuario">
+                        Usuário
+                    </label>
+
+                    <input
+                        type="text"
+                        id="usuario"
+                        name="usuario"
+                        autocomplete="username"
+                        placeholder="Digite seu usuário"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="campo">
+
+                    <label for="senha">
+                        Senha
+                    </label>
+
+                    <input
+                        type="password"
+                        id="senha"
+                        name="senha"
+                        autocomplete="current-password"
+                        placeholder="Digite sua senha"
+                        required
+                    >
+
+                </div>
+
+
+                <button type="submit">
+
+                    ENTRAR
+
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
