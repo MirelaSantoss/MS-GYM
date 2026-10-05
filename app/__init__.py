@@ -29,6 +29,7 @@ def create_app():
 
         # Essas páginas não precisam de login.
         paginas_publicas = {
+            "auth.cadastro",
             "auth.login",
             "static"
         }

@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session
-from app.models.usuario import autenticar_usuario
+from app.models.usuario import autenticar_usuario, cadastrar_usuario
 
 
 auth_bp = Blueprint("auth", __name__)
@@ -59,6 +59,37 @@ def login():
 
     return render_template(
         "auth/login.html",
+        erro=erro
+    )
+
+
+@auth_bp.route("/cadastro", methods=["GET", "POST"])
+def cadastro():
+
+    erro = None
+
+    if request.method == "POST":
+
+        usuario = request.form.get("usuario", "").strip()
+        senha = request.form.get("senha", "")
+        tipo = request.form.get("tipo", "")
+
+        cadastro_realizado = cadastrar_usuario(
+            usuario,
+            senha,
+            tipo
+        )
+
+        if cadastro_realizado:
+
+            return redirect(
+                url_for("auth.login")
+            )
+
+        erro = "Esse usuário já existe."
+
+    return render_template(
+        "auth/cadastro.html",
         erro=erro
     )
 

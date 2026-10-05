@@ -1,37 +1,70 @@
-USUARIOS = {
-
-    "professor": {
-        "id": 1,
-        "usuario": "professor",
-        "senha": "123456",
-        "tipo": "professor"
-    },
-
-    "aluno": {
-        "id": 2,
-        "usuario": "aluno",
-        "senha": "123456",
-        "tipo": "aluno"
-    }
-
-}
+from app.database import conectar_banco
 
 
 def autenticar_usuario(usuario, senha):
 
-    usuario_data = USUARIOS.get(usuario)
+    banco = conectar_banco()
 
-    # Usuário não existe
+    cursor = banco.cursor(dictionary=True)
+
+    sql = """
+        SELECT id, usuario, senha, tipo
+        FROM usuarios
+        WHERE usuario = %s
+        AND senha = %s
+    """
+
+    cursor.execute(
+        sql,
+        (usuario, senha)
+    )
+
+    usuario_data = cursor.fetchone()
+
+    cursor.close()
+    banco.close()
+
     if not usuario_data:
         return None
 
-    # Senha está errada
-    if usuario_data["senha"] != senha:
-        return None
-
-    # Login correto
     return {
         "id": usuario_data["id"],
         "usuario": usuario_data["usuario"],
         "tipo": usuario_data["tipo"]
     }
+
+# parte do cadastro 
+
+def cadastrar_usuario(usuario, senha, tipo):
+
+    banco = conectar_banco()
+
+    cursor = banco.cursor()
+
+    sql = """
+        INSERT INTO usuarios (usuario, senha, tipo)
+        VALUES (%s, %s, %s)
+    """
+
+    try:
+
+        cursor.execute(
+            sql,
+            (usuario, senha, tipo)
+        )
+
+        banco.commit()
+
+        cursor.close()
+        banco.close()
+
+        return True
+
+    except Exception:
+
+        banco.rollback()
+
+        cursor.close()
+        banco.close()
+
+        return False

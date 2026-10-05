@@ -1,10 +1,7 @@
 {% extends "base.html" %}
 
-
 {% block title %}
-
-    MS GYM - Login
-
+    Cadastro - MS GYM
 {% endblock %}
 
 
@@ -18,74 +15,53 @@
 
         <div class="brand">
 
-            <div>
-
-                <div class="brand-logo">
-
-                    MS
-
-                    <span>
-                        GYM
-                    </span>
-
-                </div>
-
+            <div class="brand-logo">
+                MS
+                <span>GYM</span>
             </div>
-
 
             <div class="brand-text">
 
                 <h2>
-                    FORÇA.<br>
-                    FOCO.<br>
-                    CONSTÂNCIA.
+                    Comece sua jornada.
                 </h2>
 
                 <p>
-                    Seu treino. Seu ritmo.
-                    Sua evolução.
+                    Crie sua conta e faça parte da MS GYM.
                 </p>
 
             </div>
 
-
             <div class="brand-footer">
-
-                MS GYM
-
+                Força • Disciplina • Evolução
             </div>
 
         </div>
 
 
-        <!-- LADO DO LOGIN -->
+        <!-- ÁREA DO CADASTRO -->
 
         <div class="login-area">
 
             <h1>
-                Bem-vindo
+                Criar conta
             </h1>
 
             <p class="subtitle">
-                Entre para acessar seu espaço.
+                Preencha os dados para criar sua conta.
             </p>
 
 
             {% if erro %}
 
                 <div class="erro">
-
                     {{ erro }}
-
                 </div>
 
             {% endif %}
 
 
-            <form
-                method="POST"
-                action="{{ url_for('auth.login') }}"
-            >
+            <form method="POST">
 
                 <div class="campo">
 
@@ -97,7 +73,6 @@
                         type="text"
                         id="usuario"
                         name="usuario"
-                        autocomplete="username"
                         placeholder="Digite seu usuário"
                         required
                     >
@@ -115,7 +90,6 @@
                         type="password"
                         id="senha"
                         name="senha"
-                        autocomplete="current-password"
                         placeholder="Digite sua senha"
                         required
                     >
@@ -123,20 +97,47 @@
                 </div>
 
 
+                <div class="campo">
+
+                    <label for="tipo">
+                        Tipo de usuário
+                    </label>
+
+                    <select
+                        id="tipo"
+                        name="tipo"
+                        required
+                    >
+
+                        <option value="aluno">
+                            Aluno
+                        </option>
+
+                        <option value="professor">
+                            Professor
+                        </option>
+
+                    </select>
+
+                </div>
+
+
                 <button type="submit">
-
-                    ENTRAR
-
+                    Criar conta
                 </button>
 
-                <p>
-                    Ainda não possui uma conta?
-                    <a href="{{ url_for('auth.cadastro') }}">Criar conta</a>
-                </p>
-
-                
-
             </form>
+
+
+            <p class="subtitle">
+
+                Já possui uma conta?
+
+                <a href="{{ url_for('auth.login') }}">
+                    Voltar para o login
+                </a>
+
+            </p>
 
         </div>
 
