@@ -19,6 +19,10 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(home_bp)
 
+    # Garante que a tabela de usuários exista ao iniciar o sistema.
+    from app.models.usuario import Usuario
+    Usuario.criar_tabela()
+
 
     # ==========================================
     # MIDDLEWARE

@@ -1,70 +1,73 @@
-from app.database import conectar_banco
+import os
+import sqlite3
 
 
-def autenticar_usuario(usuario, senha):
+class Usuario:
+    """Modelo Usuario: concentra toda a comunicação com o SQLite."""
 
-    banco = conectar_banco()
+    def __init__(self, usuario, senha, tipo, id=None):
+        self.id = id
+        self.usuario = usuario
+        self.senha = senha
+        self.tipo = tipo
 
-    cursor = banco.cursor(dictionary=True)
+    @staticmethod
+    def conectar():
+        """Abre uma conexão com o arquivo database.db."""
+        pasta_projeto = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        caminho_banco = os.path.join(pasta_projeto, "database.db")
+        conexao = sqlite3.connect(caminho_banco)
+        conexao.row_factory = sqlite3.Row
+        return conexao
 
-    sql = """
-        SELECT id, usuario, senha, tipo
-        FROM usuarios
-        WHERE usuario = %s
-        AND senha = %s
-    """
+    @classmethod
+    def criar_tabela(cls):
+        """Cria a tabela caso ela ainda não exista."""
+        conexao = cls.conectar()
+        conexao.execute("""
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                usuario TEXT NOT NULL UNIQUE,
+                senha TEXT NOT NULL,
+                tipo TEXT NOT NULL
+            )
+        """)
+        conexao.commit()
+        conexao.close()
 
-    cursor.execute(
-        sql,
-        (usuario, senha)
-    )
+    def salvar(self):
+        """Insere este objeto Usuario na tabela."""
+        conexao = self.conectar()
+        try:
+            conexao.execute(
+                "INSERT INTO usuarios (usuario, senha, tipo) VALUES (?, ?, ?)",
+                (self.usuario, self.senha, self.tipo)
+            )
+            conexao.commit()
+            return True
+        except sqlite3.IntegrityError:
+            conexao.rollback()
+            return False
+        finally:
+            conexao.close()
 
-    usuario_data = cursor.fetchone()
+    @classmethod
+    def listar(cls):
+        """Busca todos os usuários cadastrados e devolve uma lista."""
+        conexao = cls.conectar()
+        registros = conexao.execute(
+            "SELECT id, usuario, tipo FROM usuarios ORDER BY id DESC"
+        ).fetchall()
+        conexao.close()
+        return [dict(registro) for registro in registros]
 
-    cursor.close()
-    banco.close()
-
-    if not usuario_data:
-        return None
-
-    return {
-        "id": usuario_data["id"],
-        "usuario": usuario_data["usuario"],
-        "tipo": usuario_data["tipo"]
-    }
-
-# parte do cadastro 
-
-def cadastrar_usuario(usuario, senha, tipo):
-
-    banco = conectar_banco()
-
-    cursor = banco.cursor()
-
-    sql = """
-        INSERT INTO usuarios (usuario, senha, tipo)
-        VALUES (%s, %s, %s)
-    """
-
-    try:
-
-        cursor.execute(
-            sql,
-            (usuario, senha, tipo)
-        )
-
-        banco.commit()
-
-        cursor.close()
-        banco.close()
-
-        return True
-
-    except Exception:
-
-        banco.rollback()
-
-        cursor.close()
-        banco.close()
-
-        return False
+    @classmethod
+    def autenticar(cls, usuario, senha):
+        """Confere usuário e senha no banco. Retorna os dados ou None."""
+        conexao = cls.conectar()
+        registro = conexao.execute(
+            "SELECT id, usuario, tipo FROM usuarios WHERE usuario = ? AND senha = ?",
+            (usuario, senha)
+        ).fetchone()
+        conexao.close()
+        return dict(registro) if registro else None

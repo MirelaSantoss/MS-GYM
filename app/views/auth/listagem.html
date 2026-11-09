@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Usuários cadastrados - MS GYM{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="login-area" style="width:100%;">
+            <h1>Usuários cadastrados</h1>
+            <p class="subtitle">Registros consultados diretamente no banco de dados.</p>
+
+            {% if usuarios %}
+                <div style="overflow-x:auto;">
+                    <table style="width:100%; border-collapse:collapse; text-align:left;">
+                        <thead>
+                            <tr>
+                                <th style="padding:12px;">ID</th>
+                                <th style="padding:12px;">Usuário</th>
+                                <th style="padding:12px;">Tipo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for usuario in usuarios %}
+                            <tr>
+                                <td style="padding:12px;">{{ usuario.id }}</td>
+                                <td style="padding:12px;">{{ usuario.usuario }}</td>
+                                <td style="padding:12px;">{{ usuario.tipo|capitalize }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p>Nenhum usuário cadastrado ainda.</p>
+            {% endif %}
+
+            <p class="subtitle">
+                <a href="{{ url_for('auth.cadastro') }}">Cadastrar outro usuário</a>
+                &nbsp; | &nbsp;
+                <a href="{{ url_for('home.index') }}">Voltar ao início</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
