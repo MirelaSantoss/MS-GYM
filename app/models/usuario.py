@@ -1,124 +1,62 @@
-
 from werkzeug.security import generate_password_hash, check_password_hash
-from app.bd import DatabaseConnection
-import sqlite3
-
+from app.db import DatabaseConnection
 
 class Usuario:
-    """Classe responsável pelas operações dos usuários no banco."""
-
-    def __init__(self, usuario, senha=None, tipo=None, id=None):
+    def __init__(self, username, password=None, password_hash=None, tipo="aluno", id=None):
         self.id = id
-        self.usuario = usuario
+        self.username = username
         self.tipo = tipo
-
-        # Transforma a senha em um hash antes de armazená-la.
-        self.senha = generate_password_hash(senha) if senha else None
+        self.password_hash = password_hash or (
+            generate_password_hash(password) if password else None
+        )
 
     def salvar(self):
-        """Insere um novo usuário no banco de dados."""
-
-        try:
-            with DatabaseConnection() as db:
-
-                # Verifica se o usuário já está cadastrado.
-                db.cursor.execute(
-                    "SELECT id FROM usuarios WHERE usuario = ?",
-                    (self.usuario,)
-                )
-
-                if db.cursor.fetchone() is not None:
-                    return False
-
-                # Insere o novo usuário.
-                db.cursor.execute("""
-                    INSERT INTO usuarios (usuario, senha, tipo)
-                    VALUES (?, ?, ?)
-                """, (self.usuario, self.senha, self.tipo))
-
-                self.id = db.cursor.lastrowid
-
-            return True
-
-        except sqlite3.IntegrityError:
-            return False
-
-    @classmethod
-    def autenticar(cls, usuario, senha):
-        """Verifica se o usuário e a senha estão corretos."""
-
         with DatabaseConnection() as db:
+            db.cursor.execute("SELECT id FROM usuarios WHERE username = ?", (self.username,))
+            if db.cursor.fetchone() is not None:
+                return False
 
-            db.cursor.execute("""
-                SELECT id, usuario, senha, tipo
-                FROM usuarios
-                WHERE usuario = ?
-            """, (usuario,))
-
-            registro = db.cursor.fetchone()
-
-            if registro is None:
-                return None
-
-            senha_banco = registro["senha"]
-
-            # Verifica senhas armazenadas no formato hash.
-            try:
-                senha_correta = check_password_hash(senha_banco, senha)
-            except (ValueError, TypeError):
-                senha_correta = False
-
-            # Compatibilidade com usuários cadastrados anteriormente
-            # que ainda possuem senha em texto simples.
-            if not senha_correta and senha_banco == senha:
-
-                nova_senha = generate_password_hash(senha)
-
-                db.cursor.execute("""
-                    UPDATE usuarios
-                    SET senha = ?
-                    WHERE id = ?
-                """, (nova_senha, registro["id"]))
-
-                senha_correta = True
-
-            if senha_correta:
-                return {
-                    "id": registro["id"],
-                    "usuario": registro["usuario"],
-                    "tipo": registro["tipo"]
-                }
-
-            return None
+            sql = "INSERT INTO usuarios (username, password_hash, tipo) VALUES (?, ?, ?)"
+            db.cursor.execute(sql, (self.username, self.password_hash, self.tipo))
+            self.id = db.cursor.lastrowid
+            return True
 
     @classmethod
     def listar(cls):
-        """Retorna todos os usuários cadastrados."""
-
+        sql = "SELECT id, username, password_hash, tipo FROM usuarios ORDER BY username"
         with DatabaseConnection() as db:
-
-            db.cursor.execute("""
-                SELECT id, usuario, tipo
-                FROM usuarios
-                ORDER BY id DESC
-            """)
-
-            registros = db.cursor.fetchall()
-
-            return [dict(registro) for registro in registros]
+            db.cursor.execute(sql)
+            rows = db.cursor.fetchall()
+            return [
+                cls(id=row['id'], username=row['username'], password_hash=row['password_hash'], tipo=row['tipo'])
+                for row in rows
+            ]
 
     @classmethod
-    def buscar_por_id(cls, id):
-        """Busca um usuário específico pelo seu ID."""
-
+    def autenticar(cls, username, password):
+        sql = "SELECT id, username, password_hash, tipo FROM usuarios WHERE username = ?"
         with DatabaseConnection() as db:
+            db.cursor.execute(sql, (username,))
+            row = db.cursor.fetchone()
 
-            db.cursor.execute("""
-                SELECT id, usuario, tipo
-                FROM usuarios
-                WHERE id = ?
-            """, (id,))
+        if row and check_password_hash(row['password_hash'], password):
+            return cls(id=row['id'], username=row['username'], password_hash=row['password_hash'], tipo=row['tipo'])
+        return None
 
-            registro = db.cursor.fetchone()
+    @classmethod
+    def buscar_por_id(cls, user_id):
+        sql = "SELECT id, username, password_hash, tipo FROM usuarios WHERE id = ?"
+        with DatabaseConnection() as db:
+            db.cursor.execute(sql, (user_id,))
+            row = db.cursor.fetchone()
 
-            return dict(registro) if registro else None
+        if row:
+            return cls(id=row['id'], username=row['username'], password_hash=row['password_hash'], tipo=row['tipo'])
+        return None
+
+    @classmethod
+    def excluir(cls, user_id):
+        sql = "DELETE FROM usuarios WHERE id = ?"
+        with DatabaseConnection() as db:
+            db.cursor.execute(sql, (user_id,))
+            return db.cursor.rowcount > 0

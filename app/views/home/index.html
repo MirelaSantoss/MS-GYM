@@ -1,173 +1,219 @@
 {% extends "base.html" %}
 
 {% block title %}
-
     MS GYM - Início
-
 {% endblock %}
 
-
 {% block content %}
-
 <div class="home">
 
     <!-- MENU -->
-
     <header class="navbar">
-
         <div class="logo">
             MS<span>GYM</span>
         </div>
 
         <nav>
+            <a href="{{ url_for('main.dashboard') }}">Início</a>
+            
+            {% if usuario.tipo == 'aluno' %}
+                <a href="#meu-treino">Meu treino</a>
+            {% elif usuario.tipo == 'professor' %}
+                <a href="#gerenciar-treinos">Gerenciar treinos</a>
+            {% elif usuario.tipo == 'admin' %}
+                <a href="{{ url_for('auth.listar_usuarios') }}">Usuários cadastrados</a>
+            {% endif %}
 
-            <a href="#">Início</a>
-
-            <a href="#">Meu treino</a>
-
-            <a href="{{ url_for('auth.listar_usuarios') }}">Usuários cadastrados</a>
-
-            <form
-                method="POST"
-                action="{{ url_for('auth.logout') }}"
-            >
-
-                <button
-                    type="submit"
-                    class="btn-sair"
-                >
-                    Sair
-                </button>
-
+            <form method="POST" action="{{ url_for('auth.logout') }}" style="display:inline; margin:0;">
+                <button type="submit" class="btn-sair">Sair</button>
             </form>
-
         </nav>
-
     </header>
 
-
     <!-- CONTEÚDO -->
-
     <main class="home-content">
 
+        <!-- MENSAGENS FLASH -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div style="margin-bottom: 25px;">
+                    {% for category, message in messages %}
+                        <div class="erro" style="background: {{ '#e6f4ea' if category == 'sucesso' else '#fff1f1' }}; color: {{ '#137333' if category == 'sucesso' else '#b42318' }};">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
         <section class="boas-vindas">
-
-            <p class="pequeno">
-                MS GYM
-            </p>
-
-            <h1>
-                Olá, <strong>{{ usuario }}</strong>.
-            </h1>
-
-            <p>
-                Bem-vindo de volta.
-                Pronto para o seu próximo treino?
-            </p>
-
+            <p class="pequeno">MS GYM</p>
+            <h1>Olá, <strong>{{ usuario.username }}</strong>.</h1>
+            <p>Bem-vindo de volta!</p>
         </section>
 
+        <!-- ========================================== -->
+        <!-- ÁREA DO ALUNO -->
+        <!-- ========================================== -->
+        {% if usuario.tipo == 'aluno' %}
+            <section class="cards-home" id="meu-treino" style="grid-template-columns: 1fr; margin-bottom: 30px;">
+                <div class="home-card">
+                    <div class="icone">🏋️</div>
+                    <h2>Meus Treinos por Categoria</h2>
+                    <p>Consulte seus treinos divididos por categorias e seus respectivos equipamentos.</p>
 
-        <!-- CARDS -->
-
-        <section class="cards-home">
-
-            <div class="home-card">
-
-                <div class="icone">
-                    🏋️
+                    {% if treinos %}
+                        {% set categorias = treinos | map(attribute='categoria') | unique %}
+                        <div style="display: grid; gap: 25px; margin-top: 20px;">
+                            {% for cat in categorias %}
+                                <div style="background: #f4f4f6; padding: 20px; border-radius: 14px; border-left: 5px solid var(--roxo);">
+                                    <h3 style="margin: 0 0 15px; font-size: 20px; color: var(--roxo);">Treino: {{ cat }}</h3>
+                                    
+                                    <div style="display: grid; gap: 12px;">
+                                        {% for t in treinos if t.categoria == cat %}
+                                            <div style="background: white; padding: 15px; border-radius: 10px; border: 1px solid #e3e3e7; display: flex; justify-content: space-between; align-items: center;">
+                                                <div>
+                                                    <h4 style="margin: 0 0 5px; font-size: 16px;">{{ t.maquina }}</h4>
+                                                    <p style="margin: 0 0 5px; font-size: 13px;"><strong>Séries:</strong> {{ t.series }} | <strong>Repetições:</strong> {{ t.repeticoes }}</p>
+                                                    <p style="margin: 0; font-size: 13px; color: var(--cinza);"><strong>Instruções:</strong> {{ t.descricao or 'Nenhuma descrição.' }}</p>
+                                                </div>
+                                                {% if t.foto_url %}
+                                                    <div style="margin-left: 15px;">
+                                                        <img src="{{ url_for('static', filename=t.foto_url) }}" alt="Máquina" style="max-width: 120px; border-radius: 6px;">
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p style="color: var(--cinza);">Ainda não há treinos cadastrados para você.</p>
+                    {% endif %}
                 </div>
+            </section>
 
-                <h2>
-                    Meu treino
-                </h2>
-
-                <p>
-                    Acesse seu treino e acompanhe
-                    seus exercícios.
-                </p>
-
-                <a href="#">
-                    Ver treino →
-                </a>
-
-            </div>
-
-
-            <div class="home-card">
-
-                <div class="icone">
-                    👤
+            <!-- FINANCEIRO DO ALUNO -->
+            <section class="perfil">
+                <div>
+                    <span>Financeiro</span>
+                    <h2>Status da Mensalidade</h2>
                 </div>
-
-                <h2>
-                    Meu perfil
-                </h2>
-
-                <p>
-                    Consulte suas informações
-                    dentro da academia.
-                </p>
-
-                <a href="#">
-                    Ver perfil →
-                </a>
-
-            </div>
-
-
-            <div class="home-card">
-
-                <div class="icone">
-                    🏢
+                <div style="text-align: right;">
+                    {% if aluno_atual %}
+                        <p style="margin: 0 0 5px; font-size: 14px;"><strong>Última paga:</strong> {{ aluno_atual.ultima_mensalidade or 'Pendente' }}</p>
+                        <p style="margin: 0; font-size: 14px; color: var(--roxo);"><strong>Próximo vencimento:</strong> {{ aluno_atual.proxima_mensalidade or 'Pendente' }}</p>
+                    {% else %}
+                        <p style="margin: 0; font-size: 14px; color: var(--cinza);">Perfil de aluno não vinculado.</p>
+                    {% endif %}
                 </div>
+            </section>
 
-                <h2>
-                    Academia
-                </h2>
+        <!-- ========================================== -->
+        <!-- ÁREA DO PROFESSOR (SELEÇÃO DE EQUIPAMENTO CADASTRADO) -->
+        <!-- ========================================== -->
+        {% elif usuario.tipo == 'professor' %}
+            <section class="cards-home" id="gerenciar-treinos" style="grid-template-columns: 1fr;">
+                <div class="home-card" style="padding: 40px;">
+                    <div class="icone">📋</div>
+                    <h2>Adicionar Equipamento ao Treino do Aluno</h2>
+                    <p>Selecione o aluno, defina a categoria e escolha uma máquina já cadastrada na academia.</p>
 
-                <p>
-                    Veja informações e novidades
-                    da MS GYM.
-                </p>
+                    <form method="POST" action="{{ url_for('main.criar_treino') }}" style="margin-top: 25px;">
+                        <div class="campo">
+                            <label>Selecionar Aluno</label>
+                            <select name="aluno_id" required>
+                                <option value="">-- Escolha um aluno --</option>
+                                {% for a in alunos %}
+                                    <option value="{{ a.id }}">{{ a.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
 
-                <a href="#">
-                    Ver informações →
-                </a>
+                        <div class="campo">
+                            <label>Categoria do Treino</label>
+                            <select name="categoria" required>
+                                <option value="">-- Selecione a Categoria --</option>
+                                <option value="Superiores">Superiores (Peito, Costas, Braços)</option>
+                                <option value="Inferiores">Inferiores (Pernas, Glúteos, Panturrilha)</option>
+                                <option value="Fullbody">Fullbody / Corpo Inteiro</option>
+                                <option value="Cardio e Abdômen">Cardio e Abdômen</option>
+                            </select>
+                        </div>
 
-            </div>
+                        <div class="campo">
+                            <label>Máquina / Equipamento da Academia</label>
+                            <select name="equipamento_id" required>
+                                <option value="">-- Escolha o equipamento cadastrado --</option>
+                                {% for eq in equipamentos %}
+                                    <option value="{{ eq.id }}">{{ eq.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
 
-        </section>
+                        <div class="campo">
+                            <label>Descrição / Execução Específica</label>
+                            <input type="text" name="descricao" placeholder="Instruções específicas para o aluno">
+                        </div>
 
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div class="campo">
+                                <label>Séries</label>
+                                <input type="text" name="series" placeholder="Ex: 4">
+                            </div>
+                            <div class="campo">
+                                <label>Repetições</label>
+                                <input type="text" name="repeticoes" placeholder="Ex: 12">
+                            </div>
+                        </div>
+
+                        <button type="submit" style="margin-top: 10px;">Adicionar ao Treino do Aluno</button>
+                    </form>
+                </div>
+            </section>
+
+        <!-- ========================================== -->
+        <!-- ÁREA DO ADMINISTRADOR (CADASTRO DE EQUIPAMENTOS COM UPLOAD) -->
+        <!-- ========================================== -->
+        {% elif usuario.tipo == 'admin' %}
+            <section class="cards-home" style="grid-template-columns: 1fr; margin-bottom: 30px;">
+                <div class="home-card" style="padding: 40px;">
+                    <div class="icone">🏢</div>
+                    <h2>Cadastrar Equipamento na Academia</h2>
+                    <p>Cadastre as máquinas e envie a foto direto do seu computador.</p>
+
+                    <form method="POST" action="{{ url_for('main.cadastrar_equipamento') }}" enctype="multipart/form-data" style="margin-top: 20px;">
+                        <div class="campo">
+                            <label>Nome da Máquina</label>
+                            <input type="text" name="nome" placeholder="Ex: Leg Press 45°" required>
+                        </div>
+                        <div class="campo">
+                            <label>Foto da Máquina (Arquivo do Computador)</label>
+                            <input type="file" name="foto" accept="image/*" required style="padding: 10px; background: #fafafa; border: 1px solid #e3e3e7; border-radius: 12px; width: 100%;">
+                        </div>
+                        <div class="campo">
+                            <label>Descrição Padrão</label>
+                            <input type="text" name="descricao" placeholder="Ajuste do banco, postura, etc.">
+                        </div>
+                        <button type="submit">Cadastrar Equipamento</button>
+                    </form>
+                </div>
+            </section>
+        {% endif %}
 
         <!-- PERFIL -->
-
         <section class="perfil">
-
             <div>
-
-                <span>
-                    Seu perfil
-                </span>
-
-                <h2>
-                    {{ tipo|capitalize }}
-                </h2>
-
+                <span>Seu perfil</span>
+                <h2>{{ usuario.tipo|capitalize }}</h2>
             </div>
-
             <div class="status">
-
                 <span class="bolinha"></span>
-
                 Conta ativa
-
             </div>
-
         </section>
 
     </main>
-
 </div>
-
 {% endblock %}
