@@ -26,7 +26,13 @@ def dashboard():
         if aluno_atual:
             treinos = Treino.listar_por_aluno(aluno_atual.id)
     else:
-        treinos = Treino.listar_por_usuario(usuario.id)
+        # Se for professor ou admin, traz todos os treinos para poder gerenciar
+        treinos = Treino.listar_por_usuario(usuario.id) if usuario.tipo == 'professor' else Treino.listar_por_aluno(alunos[0].id) if alunos else []
+        # Para o professor ver todos os treinos cadastrados por ele:
+        if usuario.tipo == 'professor':
+            treinos = []
+            for a in alunos:
+                treinos.extend(Treino.listar_por_aluno(a.id))
 
     return render_template(
         'home/index.html', 
@@ -38,44 +44,71 @@ def dashboard():
         equipamentos=equipamentos
     )
 
+# --- ROTAS DE EQUIPAMENTOS (ADMIN) ---
 @main_bp.route('/equipamentos/novo', methods=['POST'])
 @login_required
 def cadastrar_equipamento():
     if g.usuario.tipo != 'admin':
-        flash('Acesso negado.', 'erro')
         return redirect(url_for('main.dashboard'))
 
     nome = request.form.get('nome', '').strip()
     descricao = request.form.get('descricao', '').strip()
-    foto = request.files.get('foto')  # Recebe o arquivo enviado pelo input file
+    foto = request.files.get('foto')
 
     if not nome or not foto or foto.filename == '':
-        flash('Nome e arquivo de foto do equipamento são obrigatórios!', 'erro')
+        flash('Nome e foto são obrigatórios!', 'erro')
         return redirect(url_for('main.dashboard'))
 
-    # Salva a imagem na pasta static/uploads do projeto
     filename = secure_filename(foto.filename)
     upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
-    
-    if not os.path.exists(upload_folder):
-        os.makedirs(upload_folder)
-        
-    caminho_completo = os.path.join(upload_folder, filename)
-    foto.save(caminho_completo)
+    os.makedirs(upload_folder, exist_ok=True)
+    foto.save(os.path.join(upload_folder, filename))
 
-    # O caminho relativo que será salvo no banco de dados e lido pelo Jinja
-    foto_url = f"uploads/{filename}"
-
-    eq = Equipamento(nome=nome, foto_url=foto_url, descricao=descricao)
+    eq = Equipamento(nome=nome, foto_url=f"uploads/{filename}", descricao=descricao)
     eq.salvar()
-    flash('Equipamento e foto cadastrados com sucesso!', 'sucesso')
+    flash('Equipamento cadastrado com sucesso!', 'sucesso')
     return redirect(url_for('main.dashboard'))
 
+@main_bp.route('/equipamentos/<int:id>/editar', methods=['POST'])
+@login_required
+def editar_equipamento(id):
+    if g.usuario.tipo != 'admin':
+        return redirect(url_for('main.dashboard'))
+
+    nome = request.form.get('nome', '').strip()
+    descricao = request.form.get('descricao', '').strip()
+    foto = request.files.get('foto')
+
+    eq_antigo = Equipamento.buscar_por_id(id)
+    foto_url = eq_antigo.foto_url if eq_antigo else ""
+
+    if foto and foto.filename != '':
+        filename = secure_filename(foto.filename)
+        upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
+        os.makedirs(upload_folder, exist_ok=True)
+        foto.save(os.path.join(upload_folder, filename))
+        foto_url = f"uploads/{filename}"
+
+    eq = Equipamento(id=id, nome=nome, foto_url=foto_url, descricao=descricao)
+    eq.atualizar()
+    flash('Equipamento atualizado com sucesso!', 'sucesso')
+    return redirect(url_for('main.dashboard'))
+
+@main_bp.route('/equipamentos/<int:id>/excluir', methods=['POST'])
+@login_required
+def excluir_equipamento(id):
+    if g.usuario.tipo != 'admin':
+        return redirect(url_for('main.dashboard'))
+    Equipamento.excluir(id)
+    flash('Equipamento excluído!', 'sucesso')
+    return redirect(url_for('main.dashboard'))
+
+
+# --- ROTAS DE TREINOS (PROFESSOR) ---
 @main_bp.route('/treinos/novo', methods=['POST'])
 @login_required
 def criar_treino():
     if g.usuario.tipo not in ['professor', 'admin']:
-        flash('Acesso negado.', 'erro')
         return redirect(url_for('main.dashboard'))
 
     categoria = request.form.get('categoria', '').strip()
@@ -85,39 +118,21 @@ def criar_treino():
     repeticoes = request.form.get('repeticoes', '').strip()
     aluno_id = request.form.get('aluno_id')
     
-    if not categoria or not equipamento_id or not aluno_id:
-        flash('Categoria, Equipamento e Aluno são obrigatórios!', 'erro')
-        return redirect(url_for('main.dashboard'))
-        
-    # Busca o equipamento selecionado para puxar automaticamente o nome e a foto cadastrada pelo admin
     eq = Equipamento.buscar_por_id(int(equipamento_id))
-    if not eq:
-        flash('Equipamento inválido.', 'erro')
-        return redirect(url_for('main.dashboard'))
-
     novo_treino = Treino(
-        categoria=categoria,
-        maquina=eq.nome,
-        foto_url=eq.foto_url,
-        descricao=descricao or eq.descricao,
-        series=series,
-        repeticoes=repeticoes,
-        aluno_id=int(aluno_id),
-        usuario_id=g.usuario.id
+        categoria=categoria, maquina=eq.nome, foto_url=eq.foto_url,
+        descricao=descricao or eq.descricao, series=series, repeticoes=repeticoes,
+        aluno_id=int(aluno_id), usuario_id=g.usuario.id
     )
     novo_treino.salvar()
-    flash('Equipamento adicionado ao treino do aluno com sucesso!', 'sucesso')
+    flash('Treino adicionado com sucesso!', 'sucesso')
     return redirect(url_for('main.dashboard'))
 
-@main_bp.route('/mensalidade/<int:aluno_id>/atualizar', methods=['POST'])
+@main_bp.route('/treinos/<int:id>/excluir', methods=['POST'])
 @login_required
-def atualizar_mensalidade(aluno_id):
-    if g.usuario.tipo != 'admin':
-        flash('Acesso negado.', 'erro')
+def excluir_treino(id):
+    if g.usuario.tipo not in ['professor', 'admin']:
         return redirect(url_for('main.dashboard'))
-
-    ultima = request.form.get('ultima_mensalidade', '').strip()
-    proxima = request.form.get('proxima_mensalidade', '').strip()
-    Aluno.atualizar_mensalidade(aluno_id, ultima, proxima)
-    flash('Mensalidade atualizada com sucesso!', 'sucesso')
+    Treino.excluir(id, g.usuario.id)
+    flash('Treino removido!', 'sucesso')
     return redirect(url_for('main.dashboard'))

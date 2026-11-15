@@ -34,3 +34,23 @@ class Equipamento:
             if r:
                 return cls(id=r['id'], nome=r['nome'], foto_url=r['foto_url'], descricao=r['descricao'])
             return None
+
+    def atualizar(self):
+        # Se enviou nova foto, atualiza com a foto; senão, mantém a antiga
+        if self.foto_url:
+            sql = "UPDATE equipamentos_academia SET nome = ?, foto_url = ?, descricao = ? WHERE id = ?"
+            params = (self.nome, self.foto_url, self.descricao, self.id)
+        else:
+            sql = "UPDATE equipamentos_academia SET nome = ?, descricao = ? WHERE id = ?"
+            params = (self.nome, self.descricao, self.id)
+            
+        with DatabaseConnection() as db:
+            db.cursor.execute(sql, params)
+            return db.cursor.rowcount > 0
+
+    @classmethod
+    def excluir(cls, equip_id):
+        sql = "DELETE FROM equipamentos_academia WHERE id = ?"
+        with DatabaseConnection() as db:
+            db.cursor.execute(sql, (equip_id,))
+            return db.cursor.rowcount > 0
